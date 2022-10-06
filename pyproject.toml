@@ -24,7 +24,8 @@ pre-commit = "^2.20.0"
 max-line-length = 99
 
 [tool.taskipy.tasks]
-start = "python -m silicon"
+start = "uvicorn silicon:app --host 0.0.0.0"
+reload = "uvicorn silicon:app --reload --host 0.0.0.0"
 lint = "flake8 ."
 pre-commit = "pre-commit install"
 
