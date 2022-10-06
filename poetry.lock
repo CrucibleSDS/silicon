@@ -263,6 +263,14 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "python-decouple"
+version = "3.6"
+description = "Strict separation of settings from code."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "PyYAML"
 version = "6.0"
 description = "YAML parser and emitter for Python"
@@ -378,7 +386,7 @@ testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "454748fe0b3a7c34ea71f202474677be5f387797e45b8b3deb70574c4d20d33f"
+content-hash = "84f36c03aaa6f5a745f03f0c5cc27c130eded28a5ed50966ae4dce9041737b3c"
 
 [metadata.files]
 anyio = [
@@ -559,6 +567,10 @@ pydantic = [
 pyflakes = [
     {file = "pyflakes-2.5.0-py2.py3-none-any.whl", hash = "sha256:4579f67d887f804e67edb544428f264b7b24f435b263c4614f384135cea553d2"},
     {file = "pyflakes-2.5.0.tar.gz", hash = "sha256:491feb020dca48ccc562a8c0cbe8df07ee13078df59813b83959cbdada312ea3"},
+]
+python-decouple = [
+    {file = "python-decouple-3.6.tar.gz", hash = "sha256:2838cdf77a5cf127d7e8b339ce14c25bceb3af3e674e039d4901ba16359968c7"},
+    {file = "python_decouple-3.6-py3-none-any.whl", hash = "sha256:6cf502dc963a5c642ea5ead069847df3d916a6420cad5599185de6bab11d8c2e"},
 ]
 PyYAML = [
     {file = "PyYAML-6.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d4db7c7aef085872ef65a8fd7d6d09a14ae91f691dec3e87ee5ee0539d516f53"},
