@@ -216,3 +216,6 @@ dmypy.json
 
 # Postgres
 postgres_data/
+
+# Minio
+minio_data/
