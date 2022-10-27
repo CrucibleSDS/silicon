@@ -1,5 +1,17 @@
 version: "3.7"
 services:
+  silicon:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - minio
+      - postgres
+    expose:
+      - 8000
+    volumes:
+      - ./:/silicon/:ro
+
   postgres:
     image: postgres:14
     environment:
