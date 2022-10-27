@@ -1,0 +1,24 @@
+FROM python:3.10.6-slim
+
+# Set pip to have no saved cache
+ENV PIP_NO_CACHE_DIR=false \
+    POETRY_VIRTUALENVS_CREATE=false \
+    MAX_WORKERS=10
+
+# Install poetry
+RUN pip install -U poetry
+
+# Create the working directory
+WORKDIR /silicon
+
+# Install project dependencies
+COPY pyproject.toml poetry.lock ./
+RUN poetry install
+
+# Copy the source code
+COPY . .
+
+EXPOSE 8000
+
+# Start app
+CMD ["poetry", "run", "task", "reload"]
