@@ -7,6 +7,9 @@ services:
     depends_on:
       - minio
       - postgres
+    environment:
+      DATABASE_URL: postgresql+asyncpg://silicon:not-for-production@postgres:5432/silicon
+      S3_URL: minio:9000
     ports:
       - 8000:8000
     volumes:
