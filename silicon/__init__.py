@@ -23,7 +23,7 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None,
 )
-app_router = APIRouter(prefix="/v1")
+app_router = APIRouter(prefix="/api/v1")
 
 for router in routers:
     app_router.include_router(router)
