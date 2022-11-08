@@ -1,11 +1,10 @@
 import logging
 from typing import Callable
 
-import asyncpg
 from fastapi import APIRouter, FastAPI, Request, Response
 from minio import Minio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from silicon.constants import (
     DATABASE_URL,
