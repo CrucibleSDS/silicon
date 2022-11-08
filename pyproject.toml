@@ -31,6 +31,8 @@ start = "uvicorn silicon:app --host 0.0.0.0"
 reload = "uvicorn silicon:app --reload --host 0.0.0.0"
 lint = "flake8 ."
 pre-commit = "pre-commit install"
+generate-migration = "alembic revision --autogenerate -m"
+migrate = "alembic upgrade head"
 
 [build-system]
 requires = ["poetry-core"]
