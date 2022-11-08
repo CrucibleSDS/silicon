@@ -1,3 +1,7 @@
+from silicon.routes import sds
+
 __all__ = ["routers"]
 
-routers = []
+routers = [
+    sds.router,
+]
