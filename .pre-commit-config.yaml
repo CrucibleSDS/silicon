@@ -15,6 +15,7 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
+        args: [--skip, migrations, --filter-files]
   - repo: local
     hooks:
       - id: flake8
