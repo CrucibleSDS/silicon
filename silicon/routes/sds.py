@@ -3,9 +3,10 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from io import BytesIO
+from typing import Optional
 
-from fastapi import APIRouter, Request, Response, UploadFile
-from sqlalchemy import insert, literal_column
+from fastapi import APIRouter, HTTPException, Request, Response, UploadFile
+from sqlalchemy import insert, literal_column, select
 from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, S3_BUCKET_NAME, S3_BUCKET_POLICY, S3_URL
@@ -63,3 +64,41 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
             result = await db.execute(stmt)
 
         return dict(result.fetchone())
+
+
+@router.get("/search")
+async def search_sds(
+    request: Request,
+    product_name: Optional[str] = None,
+    product_number: Optional[str] = None,
+    cas_number: Optional[str] = None,
+) -> Response:
+    db = request.state.db
+
+    if product_name:
+        stmt = select(SafetyDataSheet).where(SafetyDataSheet.product_name == product_name)
+    elif product_number:
+        stmt = select(SafetyDataSheet).where(SafetyDataSheet.product_number == product_number)
+    elif cas_number:
+        stmt = select(SafetyDataSheet).where(SafetyDataSheet.cas_number == cas_number)
+    else:
+        raise HTTPException(status_code=422, detail="Missing search query")
+
+    async with db.begin():
+        result = (await db.execute(stmt)).fetchall()
+
+    return list(sds["SafetyDataSheet"] for sds in result)
+
+
+@router.get("/{sds_id}")
+async def get_sds(request: Request, sds_id: int) -> Response:
+    db = request.state.db
+
+    async with db.begin():
+        stmt = select(SafetyDataSheet).where(SafetyDataSheet.id == sds_id)
+        result = (await db.execute(stmt)).fetchone()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="SDS not found")
+
+    return dict(result)
