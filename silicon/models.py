@@ -11,6 +11,7 @@ class SafetyDataSheet(Base):
     id = Column(Integer, primary_key=True)
     product_name = Column(String, nullable=False)
     product_number = Column(String, nullable=False)
+    product_brand = Column(String, nullable=False)
     cas_number = Column(String, nullable=False)
     pdf_download_url = Column(String, nullable=False)
     data = Column(JSON, nullable=False)
