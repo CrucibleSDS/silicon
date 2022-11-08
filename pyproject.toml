@@ -25,6 +25,7 @@ pre-commit = "^2.20.0"
 
 [tool.flake8]
 max-line-length = 99
+exclude = ["migrations"]
 
 [tool.taskipy.tasks]
 start = "uvicorn silicon:app --host 0.0.0.0"
@@ -33,6 +34,9 @@ lint = "flake8 ."
 pre-commit = "pre-commit install"
 generate-migration = "alembic revision --autogenerate -m"
 migrate = "alembic upgrade head"
+
+[tool.isort]
+multi_line_output = 3
 
 [build-system]
 requires = ["poetry-core"]

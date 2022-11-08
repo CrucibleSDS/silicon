@@ -3,7 +3,7 @@ from typing import Callable
 
 from fastapi import APIRouter, FastAPI, Request, Response
 from minio import Minio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from silicon.constants import (
@@ -12,7 +12,7 @@ from silicon.constants import (
     S3_ACCESS_KEY,
     S3_SECRET_KEY,
     S3_URL,
-    LogConfig,
+    LogConfig
 )
 from silicon.routes import routers
 
@@ -35,7 +35,11 @@ app.include_router(app_router)
 async def start() -> None:
     """Sets up the database connection and minio client."""
     app.state.engine = create_async_engine(DATABASE_URL, echo=True)
-    app.state.async_session = sessionmaker(app.state.engine, expire_on_commit=False, class_=AsyncSession)
+    app.state.async_session = sessionmaker(
+        app.state.engine,
+        expire_on_commit=False,
+        class_=AsyncSession,
+    )
 
     app.state.minio = Minio(
         S3_URL,
