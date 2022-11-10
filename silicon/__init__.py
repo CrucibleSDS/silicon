@@ -2,6 +2,7 @@ import logging
 from typing import Callable
 
 from fastapi import APIRouter, FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from minio import Minio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -24,6 +25,18 @@ app = FastAPI(
     redoc_url=None,
 )
 app_router = APIRouter(prefix="/api/v1")
+
+if DEBUG:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://127.0.0.1:3000",
+            "http://localhost:3000",
+        ],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=True,
+    )
 
 for router in routers:
     app_router.include_router(router)
