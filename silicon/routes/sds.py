@@ -76,11 +76,14 @@ async def search_sds(
     db = request.state.db
 
     if product_name:
-        stmt = select(SafetyDataSheet).where(SafetyDataSheet.product_name == product_name)
+        stmt = select(SafetyDataSheet) \
+            .where(SafetyDataSheet.product_name.ilike(f"{product_name}%"))
     elif product_number:
-        stmt = select(SafetyDataSheet).where(SafetyDataSheet.product_number == product_number)
+        stmt = select(SafetyDataSheet) \
+            .where(SafetyDataSheet.product_number.ilike(f"{product_number}%"))
     elif cas_number:
-        stmt = select(SafetyDataSheet).where(SafetyDataSheet.cas_number == cas_number)
+        stmt = select(SafetyDataSheet) \
+            .where(SafetyDataSheet.cas_number.startswith(f"{cas_number}%"))
     else:
         raise HTTPException(status_code=422, detail="Missing search query")
 
