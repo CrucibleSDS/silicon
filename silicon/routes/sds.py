@@ -7,6 +7,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile
 from sqlalchemy import insert, literal_column, select
+from sqlalchemy.exc import IntegrityError
 from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, S3_BUCKET_NAME, S3_BUCKET_POLICY, S3_URL
@@ -61,7 +62,13 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
                 ) \
                 .returning(literal_column("*"))
 
-            result = await db.execute(stmt)
+            try:
+                result = await db.execute(stmt)
+            except IntegrityError as e:
+                if "UniqueViolationError" in str(e):
+                    raise HTTPException(status_code=409, detail="SDS document already exists")
+                else:
+                    raise
 
         return dict(result.fetchone())
 

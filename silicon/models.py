@@ -1,4 +1,12 @@
-from sqlalchemy import JSON, Column, DateTime, Integer, String, func
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    Integer,
+    String,
+    UniqueConstraint,
+    func
+)
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -6,6 +14,9 @@ Base = declarative_base()
 
 class SafetyDataSheet(Base):
     __tablename__ = "safety_data_sheets"
+    __table_args__ = (
+        UniqueConstraint("product_name", "product_number", "product_brand", "cas_number"),
+    )
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(Integer, primary_key=True)
