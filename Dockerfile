@@ -24,4 +24,4 @@ COPY . .
 EXPOSE 80
 
 # Start Gunicorn with Uvicorn workers.
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "/gunicorn_conf.py", "backend:app"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "/gunicorn_conf.py", "silicon:app"]
