@@ -24,4 +24,4 @@ COPY . .
 EXPOSE 80
 
 # Start Gunicorn with Uvicorn workers.
-CMD ["sh", "-c" "poetry run task migrate && gunicorn -k uvicorn.workers.UvicornWorker -c /gunicorn_conf.py silicon:app"]
+CMD ["sh", "-c", "poetry run task migrate && gunicorn -k uvicorn.workers.UvicornWorker -c /gunicorn_conf.py silicon:app"]
