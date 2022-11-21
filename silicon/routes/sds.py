@@ -1,12 +1,12 @@
 import asyncio
 import json
+import re
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from io import BytesIO
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile
-from sqlalchemy import insert, literal_column, select
+from sqlalchemy import func, insert, literal_column, select
 from sqlalchemy.exc import IntegrityError
 from tungsten import SigmaAldrichSdsParser
 
@@ -15,6 +15,9 @@ from silicon.models import SafetyDataSheet
 from silicon.utils.sds import find_product_identifiers
 
 router = APIRouter(prefix="/sds")
+
+CAS_NUMBER_RE = re.compile(r"^(\d{1,6}(?:-|(?:-\d{1,2}(?:-|(?:-\d))?)?))$")
+PRODUCT_NUMBER_PARTIAL_RE = re.compile(r"^(\d+)$")
 
 
 @router.post("/")
@@ -74,25 +77,29 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
 
 
 @router.get("/search")
-async def search_sds(
-    request: Request,
-    product_name: Optional[str] = None,
-    product_number: Optional[str] = None,
-    cas_number: Optional[str] = None,
-) -> Response:
+async def search_sds(request: Request, query: str) -> Response:
     db = request.state.db
+    query = query.lower()
 
-    if product_name:
+    if CAS_NUMBER_RE.fullmatch(query):
+        if PRODUCT_NUMBER_PARTIAL_RE.fullmatch(query):
+            stmt = select(SafetyDataSheet) \
+                .where(
+                    SafetyDataSheet.product_number.startswith(query)
+                    | SafetyDataSheet.cas_number.startswith(query)
+                )
+        else:
+            stmt = select(SafetyDataSheet) \
+                .where(SafetyDataSheet.cas_number.startswith(query))
+    elif " " in query:
         stmt = select(SafetyDataSheet) \
-            .where(SafetyDataSheet.product_name.ilike(f"{product_name}%"))
-    elif product_number:
-        stmt = select(SafetyDataSheet) \
-            .where(SafetyDataSheet.product_number.ilike(f"{product_number}%"))
-    elif cas_number:
-        stmt = select(SafetyDataSheet) \
-            .where(SafetyDataSheet.cas_number.startswith(f"{cas_number}%"))
+            .where(func.lower(SafetyDataSheet.product_name).contains(query))
     else:
-        raise HTTPException(status_code=422, detail="Missing search query")
+        stmt = select(SafetyDataSheet) \
+            .where(
+                func.lower(SafetyDataSheet.product_name).contains(query)
+                | func.lower(SafetyDataSheet.product_number).startswith(query)
+            )
 
     async with db.begin():
         result = (await db.execute(stmt)).fetchall()
