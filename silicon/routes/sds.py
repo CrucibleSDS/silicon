@@ -10,7 +10,7 @@ from sqlalchemy import func, insert, literal_column, select
 from sqlalchemy.exc import IntegrityError
 from tungsten import SigmaAldrichSdsParser
 
-from silicon.constants import DEBUG, S3_BUCKET_NAME, S3_BUCKET_POLICY, S3_URL
+from silicon.constants import DEBUG, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
 from silicon.utils.sds import find_product_identifiers
 
@@ -35,10 +35,6 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
         parsed_sds = await execute(sds_parser.parse_to_ghs_sds, BytesIO(content))
         sds_json = json.loads(await execute(parsed_sds.dumps))
         product_identifiers = await execute(find_product_identifiers, sds_json)
-
-        if not await execute(minio.bucket_exists, S3_BUCKET_NAME):
-            await execute(minio.make_bucket, S3_BUCKET_NAME)
-            await execute(minio.set_bucket_policy, S3_BUCKET_NAME, json.dumps(S3_BUCKET_POLICY))
 
         filename = (
             f"Sigma_Aldrich_{product_identifiers['product_brand']}"

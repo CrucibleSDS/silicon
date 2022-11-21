@@ -1,4 +1,8 @@
+import asyncio
+import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from typing import Callable
 
 from fastapi import APIRouter, FastAPI, Request, Response
@@ -11,6 +15,8 @@ from silicon.constants import (
     DATABASE_URL,
     DEBUG,
     S3_ACCESS_KEY,
+    S3_BUCKET_NAME,
+    S3_BUCKET_POLICY,
     S3_SECRET_KEY,
     S3_URL,
     LogConfig
@@ -54,12 +60,21 @@ async def start() -> None:
         class_=AsyncSession,
     )
 
-    app.state.minio = Minio(
+    minio = Minio(
         S3_URL,
         access_key=S3_ACCESS_KEY,
         secret_key=S3_SECRET_KEY,
         secure=not DEBUG,
     )
+    app.state.minio = minio
+
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor() as pool:
+        execute = partial(loop.run_in_executor, pool)
+
+        if not await execute(minio.bucket_exists, S3_BUCKET_NAME):
+            await execute(minio.make_bucket, S3_BUCKET_NAME)
+            await execute(minio.set_bucket_policy, S3_BUCKET_NAME, json.dumps(S3_BUCKET_POLICY))
 
 
 @app.on_event("shutdown")
