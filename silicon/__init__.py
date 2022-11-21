@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import Callable
 
+import httpx
 from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from minio import Minio
@@ -52,13 +53,15 @@ app.include_router(app_router)
 
 @app.on_event("startup")
 async def start() -> None:
-    """Sets up the database connection and minio client."""
+    """Sets up the database connection, minio client, and HTTP client."""
     app.state.engine = create_async_engine(DATABASE_URL, echo=True)
     app.state.async_session = sessionmaker(
         app.state.engine,
         expire_on_commit=False,
         class_=AsyncSession,
     )
+
+    app.state.http_client = httpx.AsyncClient()
 
     minio = Minio(
         S3_URL,
@@ -79,13 +82,15 @@ async def start() -> None:
 
 @app.on_event("shutdown")
 async def shutdown() -> None:
-    """Closes the database connections."""
+    """Closes the database connections and HTTP client."""
     await app.state.engine.dispose()
+    await app.state.http_client.aclose()
 
 
 @app.middleware("http")
 async def setup_request(request: Request, callnext: Callable) -> Response:
-    """Gets the database connection for each request."""
+    """Gets the database connection, minio client, and HTTP client for each request."""
+    request.state.http_client = app.state.http_client
     request.state.minio = app.state.minio
 
     async with app.state.async_session() as session:
