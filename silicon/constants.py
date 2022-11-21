@@ -4,6 +4,9 @@ from pydantic import BaseModel
 DEBUG = config("DEBUG", cast=bool, default=False)
 DATABASE_URL = config("DATABASE_URL")
 
+MEILI_URL = config("MEILI_URL")
+MEILI_API_KEY = config("MEILI_API_KEY", default=None)
+
 S3_URL = config("S3_URL")
 S3_ACCESS_KEY = config("S3_ACCESS_KEY")
 S3_SECRET_KEY = config("S3_SECRET_KEY")
