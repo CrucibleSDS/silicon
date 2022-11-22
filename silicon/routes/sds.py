@@ -1,29 +1,26 @@
 import asyncio
 import json
-import re
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from io import BytesIO
 
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile
-from sqlalchemy import func, insert, literal_column, select
+from sqlalchemy import insert, literal_column, select
 from sqlalchemy.exc import IntegrityError
 from tungsten import SigmaAldrichSdsParser
 
-from silicon.constants import DEBUG, S3_BUCKET_NAME, S3_URL
+from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
 from silicon.utils.sds import find_product_identifiers
 
 router = APIRouter(prefix="/sds")
-
-CAS_NUMBER_RE = re.compile(r"^(\d{1,6}(?:-|(?:-\d{1,2}(?:-|(?:-\d))?)?))$")
-PRODUCT_NUMBER_PARTIAL_RE = re.compile(r"^(\d+)$")
 
 
 @router.post("/")
 async def upload_sds(request: Request, file: UploadFile) -> Response:
     db = request.state.db
     minio = request.state.minio
+    meili = request.state.meili
     loop = asyncio.get_running_loop()
 
     sds_parser = SigmaAldrichSdsParser()
@@ -69,38 +66,16 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
                 else:
                     raise
 
-        return dict(result.fetchone())
+        sds = result.fetchone()
+        await meili.put(
+            f"indexes/{MEILI_INDEX_NAME}/documents",
+            json={
+                "id": sds.id,
+                **product_identifiers,
+            },
+        )
 
-
-@router.get("/search")
-async def search_sds(request: Request, query: str) -> Response:
-    db = request.state.db
-    query = query.lower()
-
-    if CAS_NUMBER_RE.fullmatch(query):
-        if PRODUCT_NUMBER_PARTIAL_RE.fullmatch(query):
-            stmt = select(SafetyDataSheet) \
-                .where(
-                    SafetyDataSheet.product_number.startswith(query)
-                    | SafetyDataSheet.cas_number.startswith(query)
-                )
-        else:
-            stmt = select(SafetyDataSheet) \
-                .where(SafetyDataSheet.cas_number.startswith(query))
-    elif " " in query:
-        stmt = select(SafetyDataSheet) \
-            .where(func.lower(SafetyDataSheet.product_name).contains(query))
-    else:
-        stmt = select(SafetyDataSheet) \
-            .where(
-                func.lower(SafetyDataSheet.product_name).contains(query)
-                | func.lower(SafetyDataSheet.product_number).startswith(query)
-            )
-
-    async with db.begin():
-        result = (await db.execute(stmt)).fetchall()
-
-    return list(sds["SafetyDataSheet"] for sds in result)
+        return dict(sds)
 
 
 @router.get("/{sds_id}")
