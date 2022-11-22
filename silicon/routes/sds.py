@@ -67,7 +67,7 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
                     raise
 
         sds = result.fetchone()
-        await meili.put(
+        await meili.post(
             f"indexes/{MEILI_INDEX_NAME}/documents",
             json={
                 "id": sds.id,

@@ -92,11 +92,11 @@ async def start() -> None:
                     SafetyDataSheet.product_name,
                     SafetyDataSheet.product_number,
                     SafetyDataSheet.product_brand,
-                    SafetyDataSheet.cas_number
+                    SafetyDataSheet.cas_number,
                 ])
 
                 async for sds in await session.stream(stmt):
-                    await app.state.meili.put(
+                    await app.state.meili.post(
                         f"indexes/{MEILI_INDEX_NAME}/documents",
                         json=dict(sds),
                     )
