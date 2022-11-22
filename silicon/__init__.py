@@ -15,6 +15,7 @@ from sqlalchemy.orm import sessionmaker
 from silicon.constants import (
     DATABASE_URL,
     DEBUG,
+    MEILI_URL,
     S3_ACCESS_KEY,
     S3_BUCKET_NAME,
     S3_BUCKET_POLICY,
@@ -61,7 +62,7 @@ async def start() -> None:
         class_=AsyncSession,
     )
 
-    app.state.http_client = httpx.AsyncClient()
+    app.state.meili = httpx.AsyncClient(base_url=MEILI_URL)
 
     minio = Minio(
         S3_URL,
@@ -84,13 +85,13 @@ async def start() -> None:
 async def shutdown() -> None:
     """Closes the database connections and HTTP client."""
     await app.state.engine.dispose()
-    await app.state.http_client.aclose()
+    await app.state.meili.aclose()
 
 
 @app.middleware("http")
 async def setup_request(request: Request, callnext: Callable) -> Response:
     """Gets the database connection, minio client, and HTTP client for each request."""
-    request.state.http_client = app.state.http_client
+    request.state.meili = app.state.meili
     request.state.minio = app.state.minio
 
     async with app.state.async_session() as session:
