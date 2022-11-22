@@ -4,8 +4,15 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from io import BytesIO
 
-from fastapi import APIRouter, HTTPException, Request, Response, UploadFile
-from sqlalchemy import insert, literal_column, select
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile
+)
+from sqlalchemy import func, insert, literal_column, select
 from sqlalchemy.exc import IntegrityError
 from tungsten import SigmaAldrichSdsParser
 
@@ -76,6 +83,17 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
         )
 
         return dict(sds)
+
+
+@router.get("/batch")
+async def get_batch_sds(request: Request, sds_ids: list[int] = Query()) -> Response:
+    db = request.state.db
+
+    async with db.begin():
+        stmt = select(SafetyDataSheet).where(SafetyDataSheet.id == func.any(sds_ids))
+        result = await db.execute(stmt)
+
+    return [sds["SafetyDataSheet"] for sds in result.fetchall()]
 
 
 @router.get("/{sds_id}")
