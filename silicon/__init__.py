@@ -16,6 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from silicon.constants import (
     DATABASE_URL,
     DEBUG,
+    MEILI_API_KEY,
     MEILI_INDEX_NAME,
     MEILI_SYNC_ON_START,
     MEILI_URL,
@@ -66,7 +67,10 @@ async def start() -> None:
         class_=AsyncSession,
     )
 
-    app.state.meili = httpx.AsyncClient(base_url=MEILI_URL)
+    app.state.meili = httpx.AsyncClient(
+        base_url=MEILI_URL,
+        headers={"Authorization": f"Bearer {MEILI_API_KEY}"}
+    )
 
     minio = Minio(
         S3_URL,
