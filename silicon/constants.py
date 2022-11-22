@@ -6,7 +6,7 @@ DATABASE_URL = config("DATABASE_URL")
 
 MEILI_URL = config("MEILI_URL")
 MEILI_API_KEY = config("MEILI_API_KEY", default=None)
-MEILI_SYNC_ON_START = config("MEILI_SYNC_ON_START", default=False)
+MEILI_SYNC_ON_START = config("MEILI_SYNC_ON_START", cast=bool, default=False)
 MEILI_INDEX_NAME = "msds"
 
 S3_URL = config("S3_URL")
