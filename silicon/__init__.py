@@ -9,12 +9,15 @@ import httpx
 from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from minio import Minio
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from silicon.constants import (
     DATABASE_URL,
     DEBUG,
+    MEILI_INDEX_NAME,
+    MEILI_SYNC_ON_START,
     MEILI_URL,
     S3_ACCESS_KEY,
     S3_BUCKET_NAME,
@@ -23,6 +26,7 @@ from silicon.constants import (
     S3_URL,
     LogConfig
 )
+from silicon.models import SafetyDataSheet
 from silicon.routes import routers
 
 logging.config.dictConfig(LogConfig().dict())
@@ -79,6 +83,26 @@ async def start() -> None:
         if not await execute(minio.bucket_exists, S3_BUCKET_NAME):
             await execute(minio.make_bucket, S3_BUCKET_NAME)
             await execute(minio.set_bucket_policy, S3_BUCKET_NAME, json.dumps(S3_BUCKET_POLICY))
+
+    async def meili_sync():
+        async with app.state.async_session() as session:
+            async with session.begin():
+                stmt = select([
+                    SafetyDataSheet.id,
+                    SafetyDataSheet.product_name,
+                    SafetyDataSheet.product_number,
+                    SafetyDataSheet.product_brand,
+                    SafetyDataSheet.cas_number
+                ])
+
+                async for sds in await session.stream(stmt):
+                    await app.state.meili.put(
+                        f"indexes/{MEILI_INDEX_NAME}/documents",
+                        json=dict(sds),
+                    )
+
+    if MEILI_SYNC_ON_START:
+        asyncio.create_task(meili_sync())
 
 
 @app.on_event("shutdown")
