@@ -33,7 +33,11 @@ from silicon.routes import routers
 logging.config.dictConfig(LogConfig().dict())
 log = logging.getLogger("silicon")
 
-app = FastAPI()
+app = FastAPI(
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
+    openapi_url="/api/v1/openapi.json",
+)
 app_router = APIRouter(prefix="/api/v1")
 
 if DEBUG:
