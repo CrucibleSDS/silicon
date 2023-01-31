@@ -39,7 +39,7 @@ services:
     ports:
       - 7700:7700
     volumes:
-      - ./meili_data/:/data.ms/
+      - ./meili_data/:/meili_data
 
   minio:
     image: minio/minio:RELEASE.2022-10-05T14-58-27Z
