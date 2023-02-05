@@ -37,6 +37,13 @@ app = FastAPI(
     docs_url="/api/v1/docs",
     redoc_url="/api/v1/redoc",
     openapi_url="/api/v1/openapi.json",
+    title="Backend Code Documnentation",
+    description=description,
+    license_info={
+        "name": "MIT License",
+        "url": "https://github.com/Den4200/silicon/blob/main/LICENSE",
+    }
+    
 )
 app_router = APIRouter(prefix="/api/v1")
 
