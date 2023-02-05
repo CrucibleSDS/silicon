@@ -25,15 +25,19 @@ router = APIRouter(prefix="/sds")
 
 @router.post("/")
 async def upload_sds(request: Request, file: UploadFile) -> Response:
+    """The main functionality of 'upload_sds' is to handle the uploading of a Safety Data Sheet."""
     db = request.state.db
     minio = request.state.minio
     meili = request.state.meili
     loop = asyncio.get_running_loop()
-
+    """initializes database, miniothe database connection"""
+    
+    
     sds_parser = SigmaAldrichSdsParser()
     content = await file.read()
 
     with ThreadPoolExecutor() as pool:
+        """function uses ThreadPoolExecutor to parse the SDS file into JSON using the SigmaAldrichSdsParse."""
         execute = partial(loop.run_in_executor, pool)
 
         parsed_sds = await execute(sds_parser.parse_to_ghs_sds, BytesIO(content))
@@ -54,9 +58,11 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
                 part_size=10 * 1024 * 1024
             )
         )
-
+        """Uploads the file to Minio and creates a URL for the file"""
         pdf_download_url = f"http{'' if DEBUG else 's'}://{S3_URL}/{S3_BUCKET_NAME}/{filename}"
         async with db.begin():
+            # Store SDS in the Database and Meili Search
+
             stmt = insert(SafetyDataSheet) \
                 .values(
                     data=sds_json,
@@ -81,30 +87,36 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
                 **product_identifiers,
             },
         )
-
+                
+        """returns the stored SDS object as a dictionary."""
         return dict(sds)
 
 
 @router.get("/batch")
 async def get_batch_sds(request: Request, sds_ids: list[int] = Query()) -> Response:
+    """Main Functionality of get_batch_sds is retrieve a batch of SDS from the Database"""
     db = request.state.db
 
     async with db.begin():
+        """retrieves records from the SafetyDataSheet where the `id` field matches any value in the `sds_ids` ."""
         stmt = select(SafetyDataSheet).where(SafetyDataSheet.id == func.any(sds_ids))
         result = await db.execute(stmt)
-
+    """returns the batch of SDS sheets"""
     return [sds["SafetyDataSheet"] for sds in result.fetchall()]
 
 
 @router.get("/{sds_id}")
 async def get_sds(request: Request, sds_id: int) -> Response:
+    """ get_sds function returns a singular SDS from a database"""
     db = request.state.db
 
     async with db.begin():
+        """gets a single safety data sheet given SDS ID."""
         stmt = select(SafetyDataSheet).where(SafetyDataSheet.id == sds_id)
         result = (await db.execute(stmt)).fetchone()
 
     if not result:
+        """If the result is empty, the code raises an HTTPException indicating that the SDS was not found."""
         raise HTTPException(status_code=404, detail="SDS not found")
-
+    """finally returns the SDS document"""
     return dict(result)
