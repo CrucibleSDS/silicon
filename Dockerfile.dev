@@ -1,4 +1,5 @@
-FROM python:3.10.6-slim
+FROM openjdk:17-slim
+COPY --from=python:3.10.6-slim / /
 
 # Set pip to have no saved cache
 ENV PIP_NO_CACHE_DIR=false \
