@@ -219,3 +219,6 @@ postgres_data/
 
 # Minio
 minio_data/
+
+# Meilisearch
+meili_data/

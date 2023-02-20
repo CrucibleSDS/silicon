@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    ARRAY,
     JSON,
     Column,
     DateTime,
@@ -24,6 +25,7 @@ class SafetyDataSheet(Base):
     product_number = Column(String, nullable=False)
     product_brand = Column(String, nullable=False)
     cas_number = Column(String, nullable=False)
+    hazards = Column(ARRAY(String), nullable=False, server_default=r"{}")
     pdf_download_url = Column(String, nullable=False)
     data = Column(JSON, nullable=False)
 
