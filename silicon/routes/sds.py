@@ -1,6 +1,6 @@
 import asyncio
 import json
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import partial
 from io import BytesIO
 
@@ -23,6 +23,12 @@ from silicon.utils.sds import get_sds_identifiers
 router = APIRouter(prefix="/sds")
 
 
+def parse_sds(content):
+    sds_parser = SigmaAldrichSdsParser()
+    parsed_sds = sds_parser.parse_to_ghs_sds(BytesIO(content))
+    return json.loads(parsed_sds.dumps())
+
+
 @router.post("/")
 async def upload_sds(request: Request, file: UploadFile) -> Response:
     db = request.state.db
@@ -30,20 +36,21 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
     meili = request.state.meili
     loop = asyncio.get_running_loop()
 
-    sds_parser = SigmaAldrichSdsParser()
     content = await file.read()
+
+    with ProcessPoolExecutor() as pool:
+        run_in_executor = partial(loop.run_in_executor, pool)
+
+        sds_json = await run_in_executor(parse_sds, content)
+        product_identifiers = await run_in_executor(get_sds_identifiers, sds_json)
+
+    filename = (
+        f"Sigma_Aldrich_{product_identifiers['product_brand']}"
+        f"_{product_identifiers['product_number']}.pdf"
+    )
 
     with ThreadPoolExecutor() as pool:
         run_in_executor = partial(loop.run_in_executor, pool)
-
-        parsed_sds = await run_in_executor(sds_parser.parse_to_ghs_sds, BytesIO(content))
-        sds_json = json.loads(await run_in_executor(parsed_sds.dumps))
-        product_identifiers = await run_in_executor(get_sds_identifiers, sds_json)
-
-        filename = (
-            f"Sigma_Aldrich_{product_identifiers['product_brand']}"
-            f"_{product_identifiers['product_number']}.pdf"
-        )
         await run_in_executor(
             partial(
                 minio.put_object,
