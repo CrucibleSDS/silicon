@@ -13,8 +13,8 @@ from fastapi import (
     Response,
     UploadFile
 )
-from sqlalchemy import func, insert, literal_column, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, literal_column, select
+from sqlalchemy.dialects.postgresql import insert
 from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
@@ -68,15 +68,22 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
                 pdf_download_url=pdf_download_url,
                 **product_identifiers,
             ) \
+            .on_conflict_do_update(
+                index_elements=[
+                    SafetyDataSheet.product_name,
+                    SafetyDataSheet.product_brand,
+                    SafetyDataSheet.product_number,
+                    SafetyDataSheet.cas_number,
+                ],
+                set_={
+                    "data": sds_json,
+                    "pdf_download_url": pdf_download_url,
+                    "hazards": product_identifiers["hazards"],
+                },
+            ) \
             .returning(literal_column("*"))
 
-        try:
-            result = await db.execute(stmt)
-        except IntegrityError as e:
-            if "UniqueViolationError" in str(e):
-                raise HTTPException(status_code=409, detail="SDS document already exists")
-            else:
-                raise
+        result = await db.execute(stmt)
 
     sds = result.fetchone()
     await meili.post(
