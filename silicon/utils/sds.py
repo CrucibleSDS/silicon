@@ -1,34 +1,12 @@
-from typing import TypeVar
-
-T = TypeVar("T")
+from tungsten import SdsQueryFieldName, SigmaAldrichFieldMapper
 
 
-def find_title(lst: list[dict[str, T]], v: T) -> dict[str, T]:
-    for d in lst:
-        if d["title"] == v:
-            return d
-
-
-def find_data(lst: list[dict[str, T]], v: T) -> dict[str, T]:
-    for d in lst:
-        if d["data"]["data"].strip() == v:
-            return d["data"]["children"]
-
-
-def find_product_identifier(sds_json: dict, identifier: str) -> str:
-    return find_data(
-        find_title(
-            find_title(sds_json["sections"], "IDENTIFICATION")["subsections"],
-            "GHS_PRODUCT_IDENTIFIER"
-        )["items"],
-        identifier,
-    )[0]["data"][1:].strip()
-
-
-def find_product_identifiers(sds_json: dict) -> dict[str, str]:
+def get_sds_identifiers(sds_json: dict) -> dict[str, str | list[str]]:
+    field_mapper = SigmaAldrichFieldMapper()
     return {
-        "product_name": find_product_identifier(sds_json, "Product name"),
-        "product_brand": find_product_identifier(sds_json, "Brand"),
-        "product_number": find_product_identifier(sds_json, "Product Number"),
-        "cas_number": find_product_identifier(sds_json, "CAS-No."),
+        "product_name": field_mapper.getField(SdsQueryFieldName.PRODUCT_NAME, sds_json),
+        "product_brand": field_mapper.getField(SdsQueryFieldName.PRODUCT_BRAND, sds_json),
+        "product_number": field_mapper.getField(SdsQueryFieldName.PRODUCT_NUMBER, sds_json),
+        "cas_number": field_mapper.getField(SdsQueryFieldName.CAS_NUMBER, sds_json),
+        "hazards": field_mapper.getField(SdsQueryFieldName.PICTOGRAM, sds_json),
     }
