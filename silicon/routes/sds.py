@@ -3,7 +3,6 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from io import BytesIO
-from typing import Callable, TypeVar
 
 from fastapi import (
     APIRouter,
@@ -21,15 +20,7 @@ from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
 from silicon.utils.sds import get_sds_identifiers
 
-T = TypeVar("T")
-
 router = APIRouter(prefix="/sds")
-thread_pool = ThreadPoolExecutor(max_workers=8)
-
-
-async def run_in_executor(func: Callable[..., T], *args) -> T:
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(thread_pool, func, *args)
 
 
 @router.post("/")
@@ -37,28 +28,32 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
     db = request.state.db
     minio = request.state.minio
     meili = request.state.meili
+    loop = asyncio.get_running_loop()
 
     sds_parser = SigmaAldrichSdsParser()
     content = await file.read()
 
-    parsed_sds = await run_in_executor(sds_parser.parse_to_ghs_sds, BytesIO(content))
-    sds_json = json.loads(await run_in_executor(parsed_sds.dumps))
-    product_identifiers = await run_in_executor(get_sds_identifiers, sds_json)
+    with ThreadPoolExecutor() as pool:
+        run_in_executor = partial(loop.run_in_executor, pool)
 
-    filename = (
-        f"Sigma_Aldrich_{product_identifiers['product_brand']}"
-        f"_{product_identifiers['product_number']}.pdf"
-    )
-    await run_in_executor(
-        partial(
-            minio.put_object,
-            S3_BUCKET_NAME,
-            filename,
-            BytesIO(content),
-            length=-1,
-            part_size=10 * 1024 * 1024
+        parsed_sds = await run_in_executor(sds_parser.parse_to_ghs_sds, BytesIO(content))
+        sds_json = json.loads(await run_in_executor(parsed_sds.dumps))
+        product_identifiers = await run_in_executor(get_sds_identifiers, sds_json)
+
+        filename = (
+            f"Sigma_Aldrich_{product_identifiers['product_brand']}"
+            f"_{product_identifiers['product_number']}.pdf"
         )
-    )
+        await run_in_executor(
+            partial(
+                minio.put_object,
+                S3_BUCKET_NAME,
+                filename,
+                BytesIO(content),
+                length=-1,
+                part_size=10 * 1024 * 1024
+            )
+        )
 
     pdf_download_url = f"http{'' if DEBUG else 's'}://{S3_URL}/{S3_BUCKET_NAME}/{filename}"
     async with db.begin():
