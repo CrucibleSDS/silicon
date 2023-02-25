@@ -3,7 +3,12 @@ COPY --from=python:3.10.6-slim / /
 
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
-    texlive-full inkscape \
+    texlive \
+    texlive-latex-base \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    texlive-fonts-extra \
+    inkscape \
     && rm -rf /var/lib/apt/lists/*
 
 # Set pip to have no saved cache
