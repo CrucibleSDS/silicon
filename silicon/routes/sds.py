@@ -121,7 +121,10 @@ async def get_batch_sds(request: Request, sds_ids: list[int] = Query()) -> Respo
 
 
 @router.post("/checkout")
-async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> StreamingResponse:
+async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> Response:
+    if not len(req_items):
+        raise HTTPException(status_code=422, detail='Must submit at least 1 SDS item')
+
     db = request.state.db
 
     async with db.begin():
