@@ -28,3 +28,19 @@ def merge_pdf(pdfs: list[BytesIO]) -> BytesIO:
     bytesio = BytesIO()
     merger.write(bytesio)
     return bytesio
+
+
+def fix_si(amount):
+    prefixes = [
+        ('T', 1e12),
+        ('G', 1e9),
+        ('M', 1e6),
+        ('k', 1e3),
+        ('', 1),
+        ('m', 1e-3),
+        ('µ', 1e-6),
+        ('n', 1e-9)]
+    for prefix, factor in prefixes:
+        if amount >= factor:
+            return f'{amount / factor:.2f}{prefix}g'
+    return f'{amount}g'
