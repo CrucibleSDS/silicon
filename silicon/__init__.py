@@ -61,7 +61,7 @@ app.include_router(app_router)
 
 @app.on_event("startup")
 async def start() -> None:
-    """Sets up the database connection, minio client, and HTTP client."""
+    """Sets up the database connection, minio client, HTTP client, and templater."""
     app.state.engine = create_async_engine(DATABASE_URL, echo=True)
     app.state.async_session = sessionmaker(
         app.state.engine,
@@ -124,7 +124,7 @@ async def shutdown() -> None:
 
 @app.middleware("http")
 async def setup_request(request: Request, callnext: Callable) -> Response:
-    """Gets the database connection, minio client, and HTTP client for each request."""
+    """Gets the database connection, minio client, HTTP client, and templater for each request."""
     request.state.meili = app.state.meili
     request.state.http = app.state.http
     request.state.minio = app.state.minio
