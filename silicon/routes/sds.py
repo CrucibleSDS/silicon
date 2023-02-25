@@ -124,6 +124,8 @@ async def get_batch_sds(request: Request, sds_ids: list[int] = Query()) -> Respo
 async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> Response:
     if not len(req_items):
         raise HTTPException(status_code=422, detail='Must submit at least 1 SDS item')
+    if any(item.mass <= 0 for item in req_items):
+        raise HTTPException(status_code=422, detail='Item mass cannot be less than or equal to 0')
 
     db = request.state.db
 
