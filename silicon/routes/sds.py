@@ -170,7 +170,7 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
     #  noinspection PyTypeChecker
     # merged = merge_pdf([front_page] + files)
 
-    return StreamingResponse(content=front_page)
+    return StreamingResponse(content=front_page, media_type='application/pdf')
 
 
 @router.get("/{sds_id}")
