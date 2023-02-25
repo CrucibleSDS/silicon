@@ -3,6 +3,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 from pdflatex import pdflatex
+from PyPDF2 import PdfFileMerger
 
 
 class Templater:
@@ -18,3 +19,12 @@ class Templater:
         pdfl = pdflatex.PDFLaTeX.from_jinja_template(self.template, data=data)
         pdf, log, cp = pdfl.create_pdf()
         return BytesIO(pdf)
+
+
+def merge_pdf(pdfs: list[BytesIO]) -> BytesIO:
+    merger = PdfFileMerger()
+    for pdf in pdfs:
+        merger.append(pdf)
+    bytesio = BytesIO()
+    merger.write(bytesio)
+    return bytesio
