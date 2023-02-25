@@ -1,0 +1,68 @@
+\documentclass[letterpaper, 11pt]{article}
+\usepackage{graphicx} % Required for inserting images
+\graphicspath{ {./img} }
+\usepackage{svg}
+\svgpath{ {./img} }
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{nopageno}
+\usepackage{cellspace}
+\setlength\cellspacetoplimit{5pt}
+\setlength\cellspacebottomlimit{5pt}
+
+\usepackage[default]{lato}
+\usepackage[T1]{fontenc}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+\def\pictGhsExplosive{\includesvg[width=50pt]{PICT_GHS01_EXPLOSIVE.svg} }
+\def\pictGhsFlammable{\includesvg[width=50pt]{PICT_GHS02_FLAMMABLE.svg} }
+\def\pictGhsOxidizing{\includesvg[width=50pt]{PICT_GHS03_OXIDIZING.svg} }
+\def\pictGhsCompressedGas{\includesvg[width=50pt]{PICT_GHS04_COMPRESSED_GAS.svg} }
+\def\pictGhsCorrosive{\includesvg[width=50pt]{PICT_GHS05_CORROSIVE.svg} }
+\def\pictGhsToxic{\includesvg[width=50pt]{PICT_GHS06_TOXIC.svg} }
+\def\pictGhsHarmful{\includesvg[width=50pt]{PICT_GHS07_HARMFUL.svg} }
+\def\pictGhsHealthHazard{\includesvg[width=50pt]{PICT_GHS08_HEALTH_HAZARD.svg} }
+\def\pictGhsEnvironmentalHazard{\includesvg[width=50pt]{PICT_GHS09_ENVIRONMENTAL_HAZARD.svg} }
+
+\title{Merck Packing Sheet}
+\author{Crucible SDS Software}
+
+\begin{document}
+
+\includesvg[width=200pt]{Merck_Logo.svg}
+
+\section*{Contents}
+
+\begin{tabular}{ {% for header in data.headers %}Sl{% if not loop.last %}|{% endif %}{% endfor %} }
+    {% for header in data.headers -%}
+    \textbf{ {{- header -}} } {%- if loop.last -%}\\{%- else -%}&{%- endif -%}
+    {%- endfor %}
+    \hline
+    {% for row in data.rows %}
+    {%- for cell in row -%}
+    {{- cell -}} {%- if loop.last -%}\\
+    {% else -%}&{%- endif -%}
+    {%- endfor -%}
+    {% endfor %}
+\end{tabular}
+
+\section*{Hazards Disclosure}
+\subsection*{Signal Word}
+{{ data.signal_word }}
+\subsection*{Pictogram(s)}
+
+{% if "PICT_GHS01_EXPLOSIVE" in data.pictograms -%}\pictGhsExplosive{%- endif -%}
+{% if "PICT_GHS02_FLAMMABLE" in data.pictograms -%}\pictGhsFlammable{%- endif -%}
+{% if "PICT_GHS03_OXIDIZING" in data.pictograms -%}\pictGhsOxidizing{%- endif -%}
+{% if "PICT_GHS04_COMPRESSED_GAS" in data.pictograms -%}\pictGhsCompressedGas{%- endif -%}
+{% if "PICT_GHS05_CORROSIVE" in data.pictograms -%}\pictGhsCorrosive{%- endif -%}
+{% if "PICT_GHS06_TOXIC" in data.pictograms -%}\pictGhsToxic{%- endif -%}
+{% if "PICT_GHS07_HARMFUL" in data.pictograms -%}\pictGhsHarmful{%- endif -%}
+{% if "PICT_GHS08_HEALTH_HAZARD" in data.pictograms -%}\pictGhsHealthHazard{%- endif -%}
+{% if "PICT_GHS09_ENVIRONMENTAL_HAZARD" in data.pictograms -%}\pictGhsEnvironmentalHazard{%- endif -%}
+
+\end{document}
