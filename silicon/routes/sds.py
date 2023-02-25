@@ -12,7 +12,6 @@ from fastapi import (
     Response,
     UploadFile
 )
-from httpx import AsyncClient
 from pydantic import BaseModel
 from sqlalchemy import func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
@@ -21,7 +20,7 @@ from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
-from silicon.utils.cart import fix_si, merge_pdf
+from silicon.utils.cart import fix_si
 from silicon.utils.sds import get_sds_identifiers
 
 router = APIRouter(prefix="/sds")
@@ -126,7 +125,7 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
 
     async with db.begin():
         stmt = select(SafetyDataSheet) \
-            .where(SafetyDataSheet.id == func.any(item.sds_id for item in req_items))
+            .where(SafetyDataSheet.id == func.any([item.sds_id for item in req_items]))
         result = await db.execute(stmt)
 
     db_data: list[SafetyDataSheet] = [sds['SafetyDataSheet'] for sds in result.fetchall()]
@@ -163,17 +162,15 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
         'pictograms': all_pictograms,
     })
 
-    http: AsyncClient = request.state.http
+    # http: AsyncClient = request.state.http
+    # files = []
+    # for sds in db_data:
+    #     response = await http.get(url=sds.pdf_download_url)
+    #     files.append(response.stream)
+    #  noinspection PyTypeChecker
+    # merged = merge_pdf([front_page] + files)
 
-    files = []
-    for sds in db_data:
-        response = await http.get(url=sds.pdf_download_url)
-        files.append(response.stream)
-
-    # noinspection PyTypeChecker
-    merged = merge_pdf([front_page] + files)
-
-    return StreamingResponse(merged)
+    return StreamingResponse(content=front_page)
 
 
 @router.get("/{sds_id}")

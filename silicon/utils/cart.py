@@ -1,9 +1,11 @@
+import os
+import subprocess
 from io import BytesIO
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from jinja2 import Environment, FileSystemLoader
-from pdflatex import pdflatex
-from PyPDF2 import PdfFileMerger
+from PyPDF2 import PdfMerger
 
 
 class Templater:
@@ -12,21 +14,40 @@ class Templater:
         self.env = Environment(loader=self.file_loader)
         self.template = self.env.get_template('template.tex')
 
-    def template_tex(self, data: dict[str, any]) -> str:
-        return self.template.render(data=data)
-
     def generate_pdf(self, data: dict[str, any]) -> BytesIO:
-        pdfl = pdflatex.PDFLaTeX.from_jinja_template(self.template, data=data)
-        pdf, log, cp = pdfl.create_pdf()
+        data['graphicspath'] = os.path.join(Path(Path(__file__).parent, 'img').absolute(), '')
+
+        print(self.template.render(data=data))
+
+        with TemporaryDirectory() as td:
+            args = [
+                'pdflatex',
+                '-interaction-mode=batchmode',
+                f'-output-directory={td}',
+                '-jobname=template',
+                '-shell-escape',
+            ]
+            subprocess.run(args,
+                           input=self.template.render(data=data).encode(encoding='utf-8'),
+                           cwd=td,
+                           timeout=15,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+            with open(Path(td, 'template.log'), 'rb') as f:
+                print(str(f.read().decode(encoding='utf-8')))
+            with open(Path(td, 'template.pdf'), 'rb') as f:
+                pdf = f.read()
         return BytesIO(pdf)
 
 
 def merge_pdf(pdfs: list[BytesIO]) -> BytesIO:
-    merger = PdfFileMerger()
+    bytesio = BytesIO(b'')
+    merger = PdfMerger()
     for pdf in pdfs:
         merger.append(pdf)
-    bytesio = BytesIO()
     merger.write(bytesio)
+    merger.close()
+    print(len(bytesio.read()))
     return bytesio
 
 

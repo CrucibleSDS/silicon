@@ -1,8 +1,8 @@
 \documentclass[letterpaper, 11pt]{article}
 \usepackage{graphicx} % Required for inserting images
-\graphicspath{ {./img} }
+\graphicspath{ {{- data.graphicspath -}} }
 \usepackage{svg}
-\svgpath{ {./img} }
+\svgpath{ {{- data.graphicspath -}} }
 \usepackage[utf8]{inputenc}
 \usepackage[margin=0.5in]{geometry}
 \usepackage{nopageno}
@@ -12,11 +12,6 @@
 
 \usepackage[default]{lato}
 \usepackage[T1]{fontenc}
-
-\usepackage{amsfonts}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{amsthm}
 
 \def\pictGhsExplosive{\includesvg[width=50pt]{PICT_GHS01_EXPLOSIVE.svg} }
 \def\pictGhsFlammable{\includesvg[width=50pt]{PICT_GHS02_FLAMMABLE.svg} }
