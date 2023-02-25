@@ -22,4 +22,4 @@ COPY . .
 EXPOSE 8000
 
 # Start app
-CMD ["poetry", "run", "task", "reload"]
+CMD ["sh", "-c", "poetry run alembic upgrade head && poetry run task reload"]
