@@ -17,8 +17,6 @@ class Templater:
     def generate_pdf(self, data: dict[str, any]) -> BytesIO:
         data['graphicspath'] = os.path.join(Path(Path(__file__).parent, 'img').absolute(), '')
 
-        print(self.template.render(data=data))
-
         with TemporaryDirectory() as td:
             args = [
                 'pdflatex',
@@ -33,8 +31,6 @@ class Templater:
                            timeout=15,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
-            with open(Path(td, 'template.log'), 'rb') as f:
-                print(str(f.read().decode(encoding='utf-8')))
             with open(Path(td, 'template.pdf'), 'rb') as f:
                 pdf = f.read()
         return BytesIO(pdf)
@@ -47,7 +43,6 @@ def merge_pdf(pdfs: list[BytesIO]) -> BytesIO:
         merger.append(pdf)
     merger.write(bytesio)
     merger.close()
-    print(len(bytesio.read()))
     return bytesio
 
 
