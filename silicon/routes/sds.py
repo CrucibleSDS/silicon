@@ -151,14 +151,22 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
     templater = request.state.templater
 
     front_page = templater.generate_pdf({
-        'headers': ["Product Name", "Product Number", "CAS No.", "Mass", "Mass \\%"],
+        'headers': [
+            "CAS No.",
+            "Product Name",
+            "Product Brand",
+            "Product Number",
+            "Mass",
+            "Mass \\%"
+        ],
         'signal_word': "Danger" if "Danger" in signal_words
         else "Warning" if "Warning" in signal_words else "N/A",
         'rows': [
             [
-                entry['sds'].product_name,
-                entry['sds'].product_number,
                 entry['sds'].cas_number,
+                entry['sds'].product_name,
+                entry['sds'].product_brand,
+                entry['sds'].product_number,
                 fix_si(entry['mass']),
                 f'{(entry["mass"] / total_mass) * 100:.2f}\\%',
             ] for entry in entries
