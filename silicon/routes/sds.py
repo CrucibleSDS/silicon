@@ -12,6 +12,7 @@ from fastapi import (
     Response,
     UploadFile
 )
+from httpx import AsyncClient
 from pydantic import BaseModel
 from sqlalchemy import func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
@@ -20,7 +21,7 @@ from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
-from silicon.utils.cart import fix_si
+from silicon.utils.cart import fix_si, merge_pdf
 from silicon.utils.sds import get_sds_identifiers
 
 router = APIRouter(prefix="/sds")
@@ -162,15 +163,17 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
         'pictograms': all_pictograms,
     })
 
-    # http: AsyncClient = request.state.http
-    # files = []
-    # for sds in db_data:
-    #     response = await http.get(url=sds.pdf_download_url)
-    #     files.append(response.stream)
-    #  noinspection PyTypeChecker
-    # merged = merge_pdf([front_page] + files)
+    http: AsyncClient = request.state.http
+    files = []
+    files.append(front_page)
+    for sds in db_data:
+        response = await http.get(url=sds.pdf_download_url)
+        files.append(BytesIO(response.content))
+    merged = merge_pdf(files)
 
-    return StreamingResponse(content=front_page, media_type='application/pdf')
+    merged.seek(0)
+
+    return StreamingResponse(content=merged, media_type='application/pdf')
 
 
 @router.get("/{sds_id}")

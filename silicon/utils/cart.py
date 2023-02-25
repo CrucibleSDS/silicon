@@ -41,7 +41,7 @@ class Templater:
 
 
 def merge_pdf(pdfs: list[BytesIO]) -> BytesIO:
-    bytesio = BytesIO(b'')
+    bytesio = BytesIO()
     merger = PdfMerger()
     for pdf in pdfs:
         merger.append(pdf)
