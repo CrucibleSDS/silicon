@@ -15,7 +15,7 @@ class Templater:
         self.template = self.env.get_template('template.tex')
 
     def generate_pdf(self, data: dict[str, any]) -> BytesIO:
-        data['graphicspath'] = os.path.join(Path(Path(__file__).parent, 'img').absolute(), '')
+        data['graphicspath'] = f"{(Path(__file__).parent / 'img').absolute()}{os.sep}"
 
         with TemporaryDirectory() as td:
             args = [

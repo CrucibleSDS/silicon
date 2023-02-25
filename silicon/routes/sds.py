@@ -164,8 +164,7 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
     })
 
     http: AsyncClient = request.state.http
-    files = []
-    files.append(front_page)
+    files = [front_page]
     for sds in db_data:
         response = await http.get(url=sds.pdf_download_url)
         files.append(BytesIO(response.content))
