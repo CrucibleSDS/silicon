@@ -12,6 +12,7 @@ from fastapi import (
     Response,
     UploadFile
 )
+from pydantic import BaseModel
 from sqlalchemy import func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
 from tungsten import SigmaAldrichSdsParser
@@ -21,6 +22,11 @@ from silicon.models import SafetyDataSheet
 from silicon.utils.sds import get_sds_identifiers
 
 router = APIRouter(prefix="/sds")
+
+
+class CheckoutItem(BaseModel):
+    sds_id: int
+    weight: float  # grams
 
 
 def parse_sds(content):
@@ -66,23 +72,24 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
     async with db.begin():
         stmt = insert(SafetyDataSheet) \
             .values(
-                data=sds_json,
-                pdf_download_url=pdf_download_url,
-                **product_identifiers,
-            ) \
+            data=sds_json,
+            pdf_download_url=pdf_download_url,
+            **product_identifiers,
+        ) \
             .on_conflict_do_update(
-                index_elements=[
-                    SafetyDataSheet.product_name,
-                    SafetyDataSheet.product_brand,
-                    SafetyDataSheet.product_number,
-                    SafetyDataSheet.cas_number,
-                ],
-                set_={
-                    "data": sds_json,
-                    "pdf_download_url": pdf_download_url,
-                    "hazards": product_identifiers["hazards"],
-                },
-            ) \
+            index_elements=[
+                SafetyDataSheet.product_name,
+                SafetyDataSheet.product_brand,
+                SafetyDataSheet.product_number,
+                SafetyDataSheet.cas_number,
+            ],
+            set_={
+                "data": sds_json,
+                "pdf_download_url": pdf_download_url,
+                "signal_word": product_identifiers["signal_word"],
+                "hazards": product_identifiers["hazards"],
+            },
+        ) \
             .returning(literal_column("*"))
 
         result = await db.execute(stmt)
