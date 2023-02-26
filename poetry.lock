@@ -1160,6 +1160,17 @@ files = [
 ]
 
 [[package]]
+name = "pylatexenc"
+version = "2.10"
+description = "Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pylatexenc-2.10.tar.gz", hash = "sha256:3dd8fd84eb46dc30bee1e23eaab8d8fb5a7f507347b23e5f38ad9675c84f40d3"},
+]
+
+[[package]]
 name = "pypdf2"
 version = "3.0.1"
 description = "A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files"
@@ -1576,4 +1587,4 @@ test = ["covdefaults (>=2.2.2)", "coverage (>=7.1)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "3400a97860732f35248c56d738843e51b4c0c55960f50f0c7abf674d818b25d9"
+content-hash = "ea832359c98a99e666e218e183d537ec7256311808b02dec487f86104e9387be"
