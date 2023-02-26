@@ -12,15 +12,24 @@ from fastapi import (
     Response,
     UploadFile
 )
+from httpx import AsyncClient
+from pydantic import BaseModel
 from sqlalchemy import func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
+from starlette.responses import StreamingResponse
 from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
+from silicon.utils.cart import fix_si, merge_pdf, tex_escape
 from silicon.utils.sds import get_sds_identifiers
 
 router = APIRouter(prefix="/sds")
+
+
+class CheckoutItem(BaseModel):
+    sds_id: int
+    mass: float  # grams
 
 
 def parse_sds(content):
@@ -66,23 +75,24 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
     async with db.begin():
         stmt = insert(SafetyDataSheet) \
             .values(
-                data=sds_json,
-                pdf_download_url=pdf_download_url,
-                **product_identifiers,
-            ) \
+            data=sds_json,
+            pdf_download_url=pdf_download_url,
+            **product_identifiers,
+        ) \
             .on_conflict_do_update(
-                index_elements=[
-                    SafetyDataSheet.product_name,
-                    SafetyDataSheet.product_brand,
-                    SafetyDataSheet.product_number,
-                    SafetyDataSheet.cas_number,
-                ],
-                set_={
-                    "data": sds_json,
-                    "pdf_download_url": pdf_download_url,
-                    "hazards": product_identifiers["hazards"],
-                },
-            ) \
+            index_elements=[
+                SafetyDataSheet.product_name,
+                SafetyDataSheet.product_brand,
+                SafetyDataSheet.product_number,
+                SafetyDataSheet.cas_number,
+            ],
+            set_={
+                "data": sds_json,
+                "pdf_download_url": pdf_download_url,
+                "signal_word": product_identifiers["signal_word"],
+                "hazards": product_identifiers["hazards"],
+            },
+        ) \
             .returning(literal_column("*"))
 
         result = await db.execute(stmt)
@@ -108,6 +118,74 @@ async def get_batch_sds(request: Request, sds_ids: list[int] = Query()) -> Respo
         result = await db.execute(stmt)
 
     return [sds["SafetyDataSheet"] for sds in result.fetchall()]
+
+
+@router.post("/checkout")
+async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> Response:
+    if not len(req_items):
+        raise HTTPException(status_code=422, detail='Must submit at least 1 SDS item')
+    if any(item.mass <= 0 for item in req_items):
+        raise HTTPException(status_code=422, detail='Item mass cannot be less than or equal to 0')
+
+    db = request.state.db
+
+    async with db.begin():
+        stmt = select(SafetyDataSheet) \
+            .where(SafetyDataSheet.id == func.any([item.sds_id for item in req_items]))
+        result = await db.execute(stmt)
+
+    db_data: list[SafetyDataSheet] = [sds['SafetyDataSheet'] for sds in result.fetchall()]
+    entries: list[dict] = []
+
+    signal_words: set[str] = {sds.signal_word for sds in db_data}
+
+    mass_map = {item.sds_id: item.mass for item in req_items}
+    for sds in db_data:
+        entries.append({
+            'sds': sds,
+            'mass': mass_map[sds.id],
+        })
+    total_mass = sum(item.mass for item in req_items)  # grams
+
+    all_pictograms: list[str] = list({hazard for sds in db_data for hazard in sds.hazards})
+    all_pictograms.sort()
+
+    templater = request.state.templater
+
+    front_page = templater.generate_pdf({
+        'headers': [
+            "CAS No.",
+            "Product Name",
+            "Product Brand",
+            "Product Number",
+            "Mass",
+            "Mass \\%"
+        ],
+        'signal_word': "Danger" if "Danger" in signal_words
+        else "Warning" if "Warning" in signal_words else "N/A",
+        'rows': [
+            [
+                tex_escape(entry['sds'].cas_number),
+                tex_escape(entry['sds'].product_name),
+                tex_escape(entry['sds'].product_brand),
+                tex_escape(entry['sds'].product_number),
+                fix_si(entry['mass']),
+                f'{(entry["mass"] / total_mass) * 100:.2f}\\%',
+            ] for entry in entries
+        ],
+        'pictograms': all_pictograms,
+    })
+
+    http: AsyncClient = request.state.http
+    files = [front_page]
+    for sds in db_data:
+        response = await http.get(url=sds.pdf_download_url)
+        files.append(BytesIO(response.content))
+    merged = merge_pdf(files)
+
+    merged.seek(0)
+
+    return StreamingResponse(content=merged, media_type='application/pdf')
 
 
 @router.get("/{sds_id}")

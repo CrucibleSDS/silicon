@@ -29,6 +29,7 @@ from silicon.constants import (
 )
 from silicon.models import SafetyDataSheet
 from silicon.routes import routers
+from silicon.utils.cart import Templater
 
 logging.config.dictConfig(LogConfig().dict())
 log = logging.getLogger("silicon")
@@ -60,7 +61,7 @@ app.include_router(app_router)
 
 @app.on_event("startup")
 async def start() -> None:
-    """Sets up the database connection, minio client, and HTTP client."""
+    """Sets up the database connection, minio client, HTTP client, and templater."""
     app.state.engine = create_async_engine(DATABASE_URL, echo=True)
     app.state.async_session = sessionmaker(
         app.state.engine,
@@ -72,6 +73,10 @@ async def start() -> None:
         base_url=MEILI_URL,
         headers={"Authorization": f"Bearer {MEILI_API_KEY}"}
     )
+
+    app.state.http = httpx.AsyncClient()
+
+    app.state.templater = Templater()
 
     minio = Minio(
         S3_URL,
@@ -119,9 +124,11 @@ async def shutdown() -> None:
 
 @app.middleware("http")
 async def setup_request(request: Request, callnext: Callable) -> Response:
-    """Gets the database connection, minio client, and HTTP client for each request."""
+    """Gets the database connection, minio client, HTTP client, and templater for each request."""
     request.state.meili = app.state.meili
+    request.state.http = app.state.http
     request.state.minio = app.state.minio
+    request.state.templater = app.state.templater
 
     async with app.state.async_session() as session:
         request.state.db = session
