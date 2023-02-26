@@ -21,7 +21,7 @@ from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
-from silicon.utils.cart import fix_si, merge_pdf
+from silicon.utils.cart import fix_si, merge_pdf, tex_escape
 from silicon.utils.sds import get_sds_identifiers
 
 router = APIRouter(prefix="/sds")
@@ -165,10 +165,10 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
         else "Warning" if "Warning" in signal_words else "N/A",
         'rows': [
             [
-                entry['sds'].cas_number,
-                entry['sds'].product_name,
-                entry['sds'].product_brand,
-                entry['sds'].product_number,
+                tex_escape(entry['sds'].cas_number),
+                tex_escape(entry['sds'].product_name),
+                tex_escape(entry['sds'].product_brand),
+                tex_escape(entry['sds'].product_number),
                 fix_si(entry['mass']),
                 f'{(entry["mass"] / total_mass) * 100:.2f}\\%',
             ] for entry in entries
