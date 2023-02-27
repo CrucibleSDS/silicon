@@ -8,6 +8,7 @@
 \usepackage{nopageno}
 \usepackage{nopageno}
 \usepackage{adjustbox}
+\usepackage{ragged2e}
 \usepackage{xltabular}
 \usepackage[default]{lato}
 \usepackage[T1]{fontenc}
@@ -21,6 +22,8 @@
 \def\pictGhsHarmful{\includesvg[width=50pt]{PICT_GHS07_HARMFUL.svg} }
 \def\pictGhsHealthHazard{\includesvg[width=50pt]{PICT_GHS08_HEALTH_HAZARD.svg} }
 \def\pictGhsEnvironmentalHazard{\includesvg[width=50pt]{PICT_GHS09_ENVIRONMENTAL_HAZARD.svg} }
+
+\newcolumntype{L}{>{\RaggedRight} X}
 
 \title{Merck Packing Sheet}
 \author{Crucible SDS Software}
