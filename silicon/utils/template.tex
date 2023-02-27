@@ -6,10 +6,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage[margin=0.5in]{geometry}
 \usepackage{nopageno}
-\usepackage{cellspace}
-\setlength\cellspacetoplimit{5pt}
-\setlength\cellspacebottomlimit{5pt}
-
+\usepackage{nopageno}
+\usepackage{adjustbox}
+\usepackage{xltabular}
 \usepackage[default]{lato}
 \usepackage[T1]{fontenc}
 
@@ -28,22 +27,24 @@
 
 \begin{document}
 
+\begin{adjustbox}{left=-0.5cm}
 \includesvg[width=200pt]{Merck_Logo.svg}
+\end{adjustbox}
 
 \section*{Contents}
 
-\begin{tabular}{ {% for header in data.headers %}Sl{% if not loop.last %}|{% endif %}{% endfor %} }
+\begin{xltabular}{\textwidth}{ {{- data.columns -}} }
     {% for header in data.headers -%}
-    \textbf{ {{- header -}} } {%- if loop.last -%}\\{%- else -%}&{%- endif -%}
+    \textbf{ {{- header -}} } {%- if loop.last -%}\rule{0pt}{2ex}\\{%- else -%}&{%- endif -%}
     {%- endfor %}
     \hline
     {% for row in data.rows %}
     {%- for cell in row -%}
-    {{- cell -}} {%- if loop.last -%}\\
+    {{- cell -}} {%- if loop.last -%}\rule{0pt}{2ex}\\
     {% else -%}&{%- endif -%}
     {%- endfor -%}
     {% endfor %}
-\end{tabular}
+\end{xltabular}
 
 \section*{Hazards Disclosure}
 \subsection*{Signal Word}
@@ -59,5 +60,6 @@
 {% if "PICT_GHS07_HARMFUL" in data.pictograms -%}\pictGhsHarmful{%- endif -%}
 {% if "PICT_GHS08_HEALTH_HAZARD" in data.pictograms -%}\pictGhsHealthHazard{%- endif -%}
 {% if "PICT_GHS09_ENVIRONMENTAL_HAZARD" in data.pictograms -%}\pictGhsEnvironmentalHazard{%- endif -%}
+\\
 
 \end{document}

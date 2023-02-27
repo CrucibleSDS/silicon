@@ -154,6 +154,7 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
     templater = request.state.templater
 
     front_page = templater.generate_pdf({
+        'columns': 'l|X|l|l|l|l',
         'headers': [
             "CAS No.",
             "Product Name",
