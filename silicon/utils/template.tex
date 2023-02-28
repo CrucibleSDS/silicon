@@ -63,6 +63,6 @@
 {% if "PICT_GHS07_HARMFUL" in data.pictograms -%}\pictGhsHarmful{%- endif -%}
 {% if "PICT_GHS08_HEALTH_HAZARD" in data.pictograms -%}\pictGhsHealthHazard{%- endif -%}
 {% if "PICT_GHS09_ENVIRONMENTAL_HAZARD" in data.pictograms -%}\pictGhsEnvironmentalHazard{%- endif -%}
-\\
+{%- if data.pictograms|length > 0 -%}\\{%- else -%}N/A\\{%- endif -%}
 
 \end{document}
