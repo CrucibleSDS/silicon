@@ -22,7 +22,7 @@ from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
-from silicon.utils.cart import fix_si, merge_pdf
+from silicon.utils.cart import PaperType, fix_si, merge_pdf
 from silicon.utils.sds import get_sds_identifiers
 
 router = APIRouter(prefix="/sds")
@@ -154,6 +154,7 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
     templater = request.state.templater
 
     front_page = templater.generate_pdf({
+        'paper': PaperType.A4_PAPER.value,
         'columns': 'l|L|l|l|l|l',
         'headers': [
             "CAS No.",

@@ -1,5 +1,6 @@
 import os
 import subprocess
+from enum import Enum
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -34,6 +35,14 @@ class Templater:
             with open(Path(td, 'template.pdf'), 'rb') as f:
                 pdf = f.read()
         return BytesIO(pdf)
+
+
+class PaperType(Enum):
+    A4_PAPER = 'a4paper'
+    A5_PAPER = 'a5paper'
+    B5_PAPER = 'b5paper'
+    LETTER_PAPER = 'letterpaper'
+    LEGAL_PAPER = 'legalpaper'
 
 
 def merge_pdf(pdfs: list[BytesIO]) -> BytesIO:
