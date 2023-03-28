@@ -1,0 +1,47 @@
+Installation Packages:
+
+Things Need to Download for (Development Purposes Only):
+  1) Docker : https://docs.docker.com/get-docker/ 
+  2) Python 3.10 : https://www.geeksforgeeks.org/download-and-install-python-3-latest-version/ 
+  3) Node 16 recommended to use NVM:https://github.com/nvm-sh/nvm#installing-and-updating
+    After downloading the link run nvm install 16 in terminal
+  4) Docker Compose: pip install docker-compose (run this in terminal) 
+  5)Download Java 17: https://www.oracle.com/java/technologies/downloads/#java17
+
+
+Why are those softwares are Required?
+  - Silicon is written in python
+  - Tungsten utilizes tabula for table parsing, which is written in java
+  - Merckury is written in typescript, which compiles down to javascript, which uses node as the runtime
+  - Docker is used to containerize our applications so that environments can be replicated across different machines
+  - Docker-compose is used for ease of development to allow us to build and run multiple pre-configured containerized services at once
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Usage:
+
+Uploading MSDS Sheets
+
+
