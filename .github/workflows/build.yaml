@@ -38,8 +38,8 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         push: true
-        cache-from: type=registry,ref=ghcr.io/den4200/silicon:latest
+        cache-from: type=registry,ref=ghcr.io/cruciblesds/silicon:latest
         cache-to: type=inline
         tags: |
-          ghcr.io/den4200/silicon:latest
-          ghcr.io/den4200/silicon:${{ steps.sha_tag.outputs.tag }}
+          ghcr.io/cruciblesds/silicon:latest
+          ghcr.io/cruciblesds/silicon:${{ steps.sha_tag.outputs.tag }}
