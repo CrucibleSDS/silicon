@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     texlive-latex-recommended \
     texlive-latex-extra \
     texlive-fonts-extra \
+    latexmk \
     inkscape \
     && rm -rf /var/lib/apt/lists/*
 

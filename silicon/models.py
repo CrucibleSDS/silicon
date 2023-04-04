@@ -27,6 +27,7 @@ class SafetyDataSheet(Base):
     cas_number = Column(String, nullable=False)
     signal_word = Column(String, nullable=True)
     hazards = Column(ARRAY(String), nullable=False, server_default=r"{}")
+    statements = Column(ARRAY(String), nullable=False, server_default=r"{}")
     pdf_download_url = Column(String, nullable=False)
     data = Column(JSON, nullable=False)
 
