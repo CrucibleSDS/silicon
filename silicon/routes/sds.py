@@ -1,8 +1,10 @@
 import asyncio
 import json
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from datetime import datetime, date
 from functools import partial
 from io import BytesIO
+from typing import Literal, List
 
 from fastapi import (
     APIRouter,
@@ -13,7 +15,7 @@ from fastapi import (
     UploadFile
 )
 from httpx import AsyncClient
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from pylatexenc.latexencode import unicode_to_latex
 from sqlalchemy import func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
@@ -22,7 +24,7 @@ from tungsten import SigmaAldrichSdsParser
 
 from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
-from silicon.utils.cart import PaperType, fix_si, merge_pdf
+from silicon.utils.cover.templater import PaperType, fix_si, merge_pdf
 from silicon.utils.sds import get_sds_identifiers
 
 router = APIRouter(prefix="/sds")
@@ -30,7 +32,33 @@ router = APIRouter(prefix="/sds")
 
 class CheckoutItem(BaseModel):
     sds_id: int
-    mass: float  # grams
+    percentage: float
+
+    @classmethod
+    @validator('percentage')
+    def validate_percentage(cls, percentage):
+        if percentage <= 0:
+            raise ValueError("Item percentage cannot be less than or equal to 0%")
+        if percentage > 100:
+            raise ValueError("Item percentage cannot be greater than 100%")
+        return percentage
+
+
+
+class Checkout(BaseModel):
+    product_name: str
+    destination: str
+    measurement_type: Literal["volume", "weight"]
+    certification_date: date
+    sensitivity: Literal["sensitive", "confidential", "proprietary", "public"]
+    items: List[CheckoutItem]
+
+    @classmethod
+    @validator('items')
+    def validate_items(cls, items):
+        if not len(items):
+            raise ValueError("Must submit at least 1 SDS item")
+        return items
 
 
 def parse_sds(content):
@@ -122,17 +150,12 @@ async def get_batch_sds(request: Request, sds_ids: list[int] = Query()) -> Respo
 
 
 @router.post("/checkout")
-async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> Response:
-    if not len(req_items):
-        raise HTTPException(status_code=422, detail='Must submit at least 1 SDS item')
-    if any(item.mass <= 0 for item in req_items):
-        raise HTTPException(status_code=422, detail='Item mass cannot be less than or equal to 0')
-
+async def post_checkout_sds(request: Request, req_payload: Checkout) -> Response:
     db = request.state.db
 
     async with db.begin():
         stmt = select(SafetyDataSheet) \
-            .where(SafetyDataSheet.id == func.any([item.sds_id for item in req_items]))
+            .where(SafetyDataSheet.id == func.any([item.sds_id for item in req_payload.items]))
         result = await db.execute(stmt)
 
     db_data: list[SafetyDataSheet] = [sds['SafetyDataSheet'] for sds in result.fetchall()]
@@ -140,13 +163,12 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
 
     signal_words: set[str] = {sds.signal_word for sds in db_data}
 
-    mass_map = {item.sds_id: item.mass for item in req_items}
+    cent_map = {item.sds_id: item.percentage for item in req_payload.items}
     for sds in db_data:
         entries.append({
             'sds': sds,
-            'mass': mass_map[sds.id],
+            'percentage': cent_map[sds.id],
         })
-    total_mass = sum(item.mass for item in req_items)  # grams
 
     all_pictograms: list[str] = list({hazard for sds in db_data for hazard in sds.hazards})
     all_pictograms.sort()
@@ -155,28 +177,30 @@ async def post_checkout_sds(request: Request, req_items: list[CheckoutItem]) -> 
 
     front_page = templater.generate_pdf({
         'paper': PaperType.A4_PAPER.value,
-        'columns': 'l|L|l|l|l|l',
+        'cover_title': "Cover Sheet — U.S. Origin Shipments",
+        'sensitivity': req_payload.sensitivity.strip().lower().capitalize(),
+        'product_name': req_payload.product_name,
+        'destination_country': req_payload.destination,
+        'columns': 'L|l|l',
         'headers': [
-            "CAS No.",
             "Product Name",
-            "Product Brand",
-            "Product Number",
-            "Mass",
-            "Mass \\%"
+            "CAS No.",
+            f"{req_payload.measurement_type.capitalize()} \\%"
         ],
-        'signal_word': "Danger" if "Danger" in signal_words
-        else "Warning" if "Warning" in signal_words else "N/A",
+        'signal_word': "DANGER" if "Danger" in signal_words
+        else "WARNING" if "Warning" in signal_words else None,
         'rows': [
             [
-                unicode_to_latex(entry['sds'].cas_number),
                 unicode_to_latex(entry['sds'].product_name),
-                unicode_to_latex(entry['sds'].product_brand),
-                unicode_to_latex(entry['sds'].product_number),
-                fix_si(entry['mass']),
-                f'{(entry["mass"] / total_mass) * 100:.2f}\\%',
+                unicode_to_latex(entry['sds'].cas_number),
+                f'{entry["percentage"]}\\%',
             ] for entry in entries
         ],
         'pictograms': all_pictograms,
+        'hazard_statement_overview': ["ACUTE_TOXICITY", "COMBUSTIBLE_DUST", "FLAMMABLE_LIQUIDS",
+                                      "SERIOUS_EYE_DAMAGE_IRRITATION", "ORGAN_TOXICITY_REPEATED_PROLONGED",
+                                      "ORGAN_TOXICITY_SINGLE"],
+        'signature_date': req_payload.certification_date.strftime('%B %d, %Y'),
     })
 
     http: AsyncClient = request.state.http

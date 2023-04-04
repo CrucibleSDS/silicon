@@ -29,7 +29,7 @@ from silicon.constants import (
 )
 from silicon.models import SafetyDataSheet
 from silicon.routes import routers
-from silicon.utils.cart import Templater
+from silicon.utils.cover.templater import Templater
 
 logging.config.dictConfig(LogConfig().dict())
 log = logging.getLogger("silicon")
