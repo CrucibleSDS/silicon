@@ -5,7 +5,7 @@ from datetime import date
 from functools import partial
 from io import BytesIO
 from typing import List, Literal
-from urllib.parse import urljoin
+from urllib.parse import urljoin, quote
 
 from botocore.handlers import validate_bucket_name
 from fastapi import (
@@ -106,7 +106,7 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
             Key=filename,
         )
 
-    pdf_download_url = urljoin(S3_URL, f"{S3_BUCKET_NAME}/{filename}")
+    pdf_download_url = urljoin(S3_URL, quote(f"{S3_BUCKET_NAME}/{filename}"))
     async with db.begin():
         stmt = insert(SafetyDataSheet) \
             .values(
