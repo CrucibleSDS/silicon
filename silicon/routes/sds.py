@@ -7,6 +7,7 @@ from io import BytesIO
 from typing import List, Literal
 from urllib.parse import urljoin
 
+from botocore.handlers import validate_bucket_name
 from fastapi import (
     APIRouter,
     HTTPException,
@@ -94,6 +95,9 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
 
     async with s3() as client:
         client: S3Client
+
+        # Disable bucket name validation to support Ceph RGW tenancy
+        client.meta.events.unregister("before-parameter-build.s3", validate_bucket_name)
 
         await client.put_object(
             ACL="public-read",
