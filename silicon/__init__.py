@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from contextlib import suppress
 from typing import Callable
 
 from aiobotocore.session import get_session
@@ -10,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from types_aiobotocore_s3.client import S3Client
 
 from silicon.constants import (
     DATABASE_URL,
@@ -20,7 +18,6 @@ from silicon.constants import (
     MEILI_SYNC_ON_START,
     MEILI_URL,
     S3_ACCESS_KEY,
-    S3_BUCKET_NAME,
     S3_SECRET_KEY,
     S3_URL,
     LogConfig
@@ -87,12 +84,6 @@ async def start() -> None:
         )
 
     app.state.s3 = s3
-
-    async with s3() as client:
-        client: S3Client
-
-        with suppress(client.exceptions.BucketAlreadyOwnedByYou):
-            await client.create_bucket(ACL="public-read", Bucket=S3_BUCKET_NAME)
 
     async def meili_sync():
         async with app.state.async_session() as session:
