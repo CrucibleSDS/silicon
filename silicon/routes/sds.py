@@ -1,10 +1,11 @@
 import asyncio
 import json
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from datetime import date
 from functools import partial
 from io import BytesIO
 from typing import List, Literal
+from urllib.parse import urljoin
 
 from fastapi import (
     APIRouter,
@@ -21,8 +22,9 @@ from sqlalchemy import func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
 from starlette.responses import StreamingResponse
 from tungsten import SigmaAldrichSdsParser
+from types_aiobotocore_s3.client import S3Client
 
-from silicon.constants import DEBUG, MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
+from silicon.constants import MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
 from silicon.models import SafetyDataSheet
 from silicon.utils.cover.templater import (
     HazardStatementOverview,
@@ -73,7 +75,7 @@ def parse_sds(content):
 @router.post("/")
 async def upload_sds(request: Request, file: UploadFile) -> Response:
     db = request.state.db
-    minio = request.state.minio
+    s3: S3Client = request.state.s3
     meili = request.state.meili
     loop = asyncio.get_running_loop()
 
@@ -90,20 +92,17 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
         f"_{product_identifiers['product_number']}.pdf"
     )
 
-    with ThreadPoolExecutor() as pool:
-        run_in_executor = partial(loop.run_in_executor, pool)
-        await run_in_executor(
-            partial(
-                minio.put_object,
-                S3_BUCKET_NAME,
-                filename,
-                BytesIO(content),
-                length=-1,
-                part_size=10 * 1024 * 1024
-            )
+    async with s3() as client:
+        client: S3Client
+
+        await client.put_object(
+            ACL="public-read",
+            Bucket=S3_BUCKET_NAME,
+            Body=content,
+            Key=filename,
         )
 
-    pdf_download_url = f"http{'' if DEBUG else 's'}://{S3_URL}/{S3_BUCKET_NAME}/{filename}"
+    pdf_download_url = urljoin(S3_URL, f"{S3_BUCKET_NAME}/{filename}")
     async with db.begin():
         stmt = insert(SafetyDataSheet) \
             .values(

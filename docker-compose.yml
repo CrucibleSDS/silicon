@@ -12,7 +12,7 @@ services:
       DEBUG: "true"
       MEILI_URL: http://meilisearch:7700
       MEILI_SYNC_ON_START: "false"
-      S3_URL: minio:9000
+      S3_URL: http://minio:9000
       S3_ACCESS_KEY: K6DoFzJSfGiXaPOg
       S3_SECRET_KEY: 4gdoVkKySwoa8yX5n0qufvfnv2eQFPcP
     ports:

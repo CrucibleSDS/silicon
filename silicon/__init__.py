@@ -1,17 +1,16 @@
 import asyncio
-import json
 import logging
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
+from contextlib import suppress
 from typing import Callable
 
+from aiobotocore.session import get_session
 import httpx
 from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from minio import Minio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from types_aiobotocore_s3.client import S3Client
 
 from silicon.constants import (
     DATABASE_URL,
@@ -22,7 +21,6 @@ from silicon.constants import (
     MEILI_URL,
     S3_ACCESS_KEY,
     S3_BUCKET_NAME,
-    S3_BUCKET_POLICY,
     S3_SECRET_KEY,
     S3_URL,
     LogConfig
@@ -61,7 +59,7 @@ app.include_router(app_router)
 
 @app.on_event("startup")
 async def start() -> None:
-    """Sets up the database connection, minio client, HTTP client, and templater."""
+    """Sets up the database connection, S3 client, HTTP client, and templater."""
     app.state.engine = create_async_engine(DATABASE_URL, echo=True)
     app.state.async_session = sessionmaker(
         app.state.engine,
@@ -78,21 +76,23 @@ async def start() -> None:
 
     app.state.templater = Templater()
 
-    minio = Minio(
-        S3_URL,
-        access_key=S3_ACCESS_KEY,
-        secret_key=S3_SECRET_KEY,
-        secure=not DEBUG,
-    )
-    app.state.minio = minio
+    boto_session = get_session()
 
-    loop = asyncio.get_running_loop()
-    with ThreadPoolExecutor() as pool:
-        execute = partial(loop.run_in_executor, pool)
+    def s3():
+        return boto_session.create_client(
+            "s3",
+            endpoint_url=S3_URL,
+            aws_access_key_id=S3_ACCESS_KEY,
+            aws_secret_access_key=S3_SECRET_KEY,
+        )
 
-        if not await execute(minio.bucket_exists, S3_BUCKET_NAME):
-            await execute(minio.make_bucket, S3_BUCKET_NAME)
-            await execute(minio.set_bucket_policy, S3_BUCKET_NAME, json.dumps(S3_BUCKET_POLICY))
+    app.state.s3 = s3
+
+    async with s3() as client:
+        client: S3Client
+
+        with suppress(client.exceptions.BucketAlreadyOwnedByYou):
+            await client.create_bucket(ACL="public-read", Bucket=S3_BUCKET_NAME)
 
     async def meili_sync():
         async with app.state.async_session() as session:
@@ -124,10 +124,10 @@ async def shutdown() -> None:
 
 @app.middleware("http")
 async def setup_request(request: Request, callnext: Callable) -> Response:
-    """Gets the database connection, minio client, HTTP client, and templater for each request."""
+    """Gets the database connection, S3 client, HTTP client, and templater for each request."""
     request.state.meili = app.state.meili
     request.state.http = app.state.http
-    request.state.minio = app.state.minio
+    request.state.s3 = app.state.s3
     request.state.templater = app.state.templater
 
     async with app.state.async_session() as session:
