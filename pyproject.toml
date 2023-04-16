@@ -21,6 +21,7 @@ python-decouple = "^3.6"
 python-multipart = "^0.0.5"
 sqlalchemy = { extras = ["asyncio"], version = "^1.4.43" }
 tungsten-sds = "^0.8.0"
+types-aiobotocore = {extras = ["s3"], version = "^2.5.0.post2"}
 uvicorn = "^0.18.3"
 
 [tool.poetry.group.dev.dependencies]
@@ -28,7 +29,6 @@ flake8 = "^5.0.4"
 taskipy = "^1.10.3"
 flake8-pyproject = "^1.1.0.post0"
 pre-commit = "^2.20.0"
-types-aiobotocore = {extras = ["s3"], version = "^2.5.0.post2"}
 
 [tool.flake8]
 max-line-length = 99
