@@ -7,13 +7,13 @@ DATABASE_URL = config("DATABASE_URL")
 MEILI_URL = config("MEILI_URL")
 MEILI_API_KEY = config("MEILI_API_KEY", default=None)
 MEILI_SYNC_ON_START = config("MEILI_SYNC_ON_START", cast=bool, default=False)
-MEILI_INDEX_NAME = "msds"
+MEILI_INDEX_NAME = config("MEILI_INDEX_NAME", default="msds")
 
 S3_URL = config("S3_URL")
 S3_ACCESS_KEY = config("S3_ACCESS_KEY")
 S3_SECRET_KEY = config("S3_SECRET_KEY")
 
-S3_BUCKET_NAME = "msds"
+S3_BUCKET_NAME = config("S3_BUCKET_NAME", default="msds")
 S3_BUCKET_POLICY = {
     "Version": "2012-10-17",
     "Statement": [
