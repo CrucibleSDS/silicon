@@ -5,7 +5,7 @@ from datetime import date
 from functools import partial
 from io import BytesIO
 from typing import List, Literal
-from urllib.parse import urljoin, quote
+from urllib.parse import quote, urljoin
 
 from botocore.handlers import validate_bucket_name
 from fastapi import (
@@ -25,7 +25,7 @@ from starlette.responses import StreamingResponse
 from tungsten import SigmaAldrichSdsParser
 from types_aiobotocore_s3.client import S3Client
 
-from silicon.constants import MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_URL
+from silicon.constants import MEILI_INDEX_NAME, S3_BUCKET_NAME, S3_PUBLIC_URL
 from silicon.models import SafetyDataSheet
 from silicon.utils.cover.templater import (
     HazardStatementOverview,
@@ -106,7 +106,7 @@ async def upload_sds(request: Request, file: UploadFile) -> Response:
             Key=filename,
         )
 
-    pdf_download_url = urljoin(S3_URL, quote(f"{S3_BUCKET_NAME}/{filename}"))
+    pdf_download_url = urljoin(S3_PUBLIC_URL, quote(f"{S3_BUCKET_NAME}/{filename}"))
     async with db.begin():
         stmt = insert(SafetyDataSheet) \
             .values(
