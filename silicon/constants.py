@@ -10,6 +10,7 @@ MEILI_SYNC_ON_START = config("MEILI_SYNC_ON_START", cast=bool, default=False)
 MEILI_INDEX_NAME = config("MEILI_INDEX_NAME", default="msds")
 
 S3_URL = config("S3_URL", default=None)
+S3_PUBLIC_URL = config("S3_PUBLIC_URL", default=S3_URL)
 S3_ACCESS_KEY = config("S3_ACCESS_KEY")
 S3_SECRET_KEY = config("S3_SECRET_KEY")
 S3_BUCKET_NAME = config("S3_BUCKET_NAME", default="msds")
